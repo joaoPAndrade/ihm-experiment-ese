@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from src.hardness.ih_ground_truth_calculator import IhGroundTruthCalculator
 
 

@@ -1,8 +1,10 @@
 import os
 import tempfile
+
 import numpy as np
-from PIL import Image
 import pytest
+from PIL import Image
+
 from src.data.image_feature_extractor import ImageFeatureExtractor
 
 

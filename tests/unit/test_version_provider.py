@@ -1,4 +1,3 @@
-import pytest
 from src.utils.version_provider import VersionProvider
 
 

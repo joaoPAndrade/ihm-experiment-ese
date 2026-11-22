@@ -1,6 +1,8 @@
 from collections import Counter
+
 import numpy as np
 import pytest
+
 from src.validation.stratified_fold_splitter import StratifiedFoldSplitter
 
 
