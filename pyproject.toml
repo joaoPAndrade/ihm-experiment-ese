@@ -16,4 +16,5 @@ dependencies = [
     "ruff>=0.3.0",
     "mypy>=1.9.0",
     "pre-commit>=3.6.0",
+    "numpy>=1.26.0",
 ]
