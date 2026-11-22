@@ -221,3 +221,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ambientes Virtuais
+.venv/
+venv/
+ENV/
+
+# Agent configurations, rules and skills
+.AGENTS
+AGENTS.md
+.agents/
