@@ -11,6 +11,7 @@ from src.data.image_feature_extractor import ImageFeatureExtractor
 from src.hardness.ih_ground_truth_calculator import IhGroundTruthCalculator
 from src.hardness.ihm_metrics_extractor import IhmMetricsExtractor
 from src.hardness.ihm_outlier_filter import IhmOutlierFilter
+from src.statistics.class_hardness_analyzer import ClassHardnessAnalyzer
 from src.statistics.hypothesis_tester import HypothesisTester
 from src.statistics.spearman_correlation_analyzer import SpearmanCorrelationAnalyzer
 from src.utils.results_csv_exporter import ResultsCsvExporter
@@ -35,7 +36,7 @@ class ExperimentPipeline:
         correlations = SpearmanCorrelationAnalyzer().execute(ih, ihm)
         return {"pool": pool, "eval_res": eval_res, "ih": ih, "ihm": ihm, "correlations": correlations}
 
-    def _run_statistical_and_visualization_stage(self, baseline_stage: dict[str, Any], features: np.ndarray, labels: np.ndarray, output_dir: str) -> dict[str, Any]:
+    def _run_statistical_and_visualization_stage(self, baseline_stage: dict[str, Any], features: np.ndarray, labels: np.ndarray, mapping: dict[int, str] | None, output_dir: str) -> dict[str, Any]:
         f_feat, f_labels, _mask = IhmOutlierFilter().execute(features, labels, baseline_stage["ihm"])
         counts = Counter(f_labels.tolist())
         valid_mask = np.array([counts[int(lbl)] >= self.n_splits for lbl in f_labels], dtype=bool)
@@ -48,12 +49,15 @@ class ExperimentPipeline:
         filt_f1 = filt_res["model_f1_scores"]
         hypothesis_res = HypothesisTester().execute(base_f1, filt_f1)
         plot_paths = ScientificVisualizationPlotter().execute(baseline_stage["ih"], baseline_stage["ihm"], baseline_stage["correlations"], output_dir)
-        csv_payload = {"ih": baseline_stage["ih"], "ihm": baseline_stage["ihm"], "labels": labels, "correlations": baseline_stage["correlations"], "base_f1": base_f1, "filt_f1": filt_f1, "hypothesis_res": hypothesis_res, "model_names": list(baseline_stage["pool"].keys())}
+        csv_payload = {"ih": baseline_stage["ih"], "ihm": baseline_stage["ihm"], "labels": labels, "class_names": mapping, "correlations": baseline_stage["correlations"], "base_f1": base_f1, "filt_f1": filt_f1, "hypothesis_res": hypothesis_res, "model_names": list(baseline_stage["pool"].keys())}
         csv_paths = ResultsCsvExporter().execute(csv_payload, output_dir)
+        class_res = ClassHardnessAnalyzer().execute(labels, baseline_stage["ih"], baseline_stage["ihm"], mapping, output_dir)
+        csv_paths.extend(list(class_res.values()))
         return {"hypothesis_test": hypothesis_res, "plot_paths": plot_paths, "csv_paths": csv_paths, "filtered_sample_count": len(f_labels)}
 
     def execute(self, csv_path: str, images_dir: str, output_dir: str, max_samples: int | None = None) -> dict[str, Any]:
-        paths, labels, _mapping = BotanicalDatasetLoader(min_samples_per_class=self.n_splits).execute(csv_path, images_dir)
+        paths, labels, raw_mapping = BotanicalDatasetLoader(min_samples_per_class=self.n_splits).execute(csv_path, images_dir)
+        mapping = {idx: sp for sp, idx in raw_mapping.items()}
         if max_samples is not None and max_samples < len(paths):
             sel_indices: list[int] = []
             for cls_idx in np.unique(labels):
@@ -63,9 +67,11 @@ class ExperimentPipeline:
                 if len(sel_indices) >= max_samples and len(np.unique(labels[sel_indices])) >= 2:
                     break
             paths = [paths[i] for i in sel_indices]
-            _, labels = np.unique(labels[sel_indices], return_inverse=True)
+            orig_subset = labels[sel_indices]
+            _, labels = np.unique(orig_subset, return_inverse=True)
+            mapping = {new_idx: mapping[int(orig_val)] for new_idx, orig_val in enumerate(np.unique(orig_subset))}
         features = ImageFeatureExtractor(target_size=self.target_size).execute(paths, batch_size=32)
         folds = StratifiedFoldSplitter(n_splits=self.n_splits, random_state=self.random_state).execute(len(labels), labels)
         baseline_res = self._run_baseline_and_hardness_stage(features, labels, folds)
-        stats_res = self._run_statistical_and_visualization_stage(baseline_res, features, labels, output_dir)
+        stats_res = self._run_statistical_and_visualization_stage(baseline_res, features, labels, mapping, output_dir)
         return {"dataset_stats": {"total_samples": len(labels), "classes": len(np.unique(labels))}, "q1_spearman_correlations": baseline_res["correlations"], "q2_hypothesis_test": stats_res["hypothesis_test"], "plot_paths": stats_res["plot_paths"], "csv_paths": stats_res["csv_paths"]}

@@ -27,36 +27,18 @@ Ideal para verificar rapidamente todo o pipeline com uma amostragem reduzida:
 python main.py --max-samples 50 --n-splits 3 --output-dir outputs_teste
 ```
 
-### 2.2. Execução Completa do Experimento
-Executa o pipeline científico ponta a ponta sobre as 10.503 amostras e 236 classes botânicas:
+### 2.2. Execução Completa de Todo o Dataset
+Executa o pipeline científico ponta a ponta sobre **todas as 10.503 amostras e 236 classes botânicas**:
 
 ```bash
 python main.py --csv-path datasets/final.csv --images-dir datasets/original --output-dir outputs --n-splits 5 --seed 42
 ```
 
-#### Parâmetros Disponíveis da CLI (`main.py`):
-| Parâmetro | Tipo | Padrão | Descrição |
-| :--- | :--- | :--- | :--- |
-| `--csv-path` | `str` | `datasets/final.csv` | Caminho para a planilha de metadados das amostras |
-| `--images-dir` | `str` | `datasets/original` | Diretório raiz contendo as imagens JPEG das exsicatas |
-| `--output-dir` | `str` | `outputs` | Diretório de destino para os relatórios CSV e gráficos PNG |
-| `--max-samples` | `int` | `None` | Limite de amostras a carregar (útil para testes rápidos) |
-| `--n-splits` | `int` | `5` | Quantidade de folds na validação cruzada estratificada |
-| `--seed` | `int` | `42` | Semente pseudoaleatória para reprodutibilidade científica |
-
-### 2.3. Execução da Suíte de Testes e Validação
-Para rodar todos os testes unitários com cobertura completa:
+### 2.3. Execução da Análise por Classe e Tamanho Amostral
+Gera ou atualiza os relatórios de médias de IH/IHM por classe e a análise de desempenho por quantidade de amostras a partir de qualquer diretório de resultados:
 
 ```bash
-pytest
-```
-
-Para auditar conformidade com as regras arquiteturais (.AGENTS):
-
-```bash
-python scripts/quality_gate_validator.py $(find src tests main.py -name "*.py" | sort)
-ruff check src tests main.py
-mypy src tests main.py --ignore-missing-imports
+python analyze_classes.py --results-dir outputs_teste --dataset-csv datasets/final.csv
 ```
 
 ---
@@ -74,16 +56,17 @@ mypy src tests main.py --ignore-missing-imports
 
 ## 4. Módulos Implementados
 
-### 4.1. Ponto de Entrada CLI (`main.py`)
-- **`Main`** (`main.py`): Ponto de entrada executável por linha de comando (`CLI`), faz o parsing dos argumentos, dispara o orquestrador `ExperimentPipeline` e exibe o sumário dos resultados no terminal.
+### 4.1. Scripts de Execução CLI
+- **`Main`** (`main.py`): Ponto de entrada CLI principal do experimento ponta a ponta.
+- **`AnalyzeClassesRunner`** (`analyze_classes.py`): CLI para computar a agregação por classe botânica e faixas de quantidade de amostras.
 
 ### 4.2. Utilitários (`src/utils/`)
 - **`VersionProvider`** (`src/utils/version_provider.py`): Recupera a versão semântica atual em `VERSION`.
-- **`ResultsCsvExporter`** (`src/utils/results_csv_exporter.py`): Exporta todos os dados analíticos e estatísticos do experimento para 4 arquivos CSV estruturados (separador `;`).
+- **`ResultsCsvExporter`** (`src/utils/results_csv_exporter.py`): Exporta os 4 CSVs estruturados de instâncias, correlações e hipótese.
 
 ### 4.3. Carregamento e Pré-processamento (`src/data/`)
-- **`BotanicalDatasetLoader`** (`src/data/botanical_dataset_loader.py`): Ingestão e auditoria das 10.503 exsicatas com filtro de suporte mínimo por classe.
-- **`ImageFeatureExtractor`** (`src/data/image_feature_extractor.py`): Extração de 45 atributos visuais (RGB, histogramas, gradientes espaciais e grid pooling).
+- **`BotanicalDatasetLoader`** (`src/data/botanical_dataset_loader.py`): Ingestão das 10.503 exsicatas com auditoria e mapeamento de espécies.
+- **`ImageFeatureExtractor`** (`src/data/image_feature_extractor.py`): Extração determinística de 45 atributos visuais (RGB, histogramas, gradientes espaciais e grid pooling).
 - **`DataStandardScaler`** (`src/data/data_standard_scaler.py`): Padronizador Z-score ajustado no conjunto de treino dentro de cada fold (zero *data leakage*).
 
 ### 4.4. Validação e Particionamento (`src/validation/`)
@@ -98,35 +81,30 @@ mypy src tests main.py --ignore-missing-imports
 - **`IhmMetricsExtractor`** (`src/hardness/ihm_metrics_extractor.py`) e **`GraphIhmCalculator`** (`src/hardness/graph_ihm_calculator.py`): Extraem as **13 medidas analíticas de classificação IHM**: $kDN$, $DCP$, $TD$, $CLD$, $F1_{IHM}$, $N1_{IHM}$, $N2_{IHM}$, $LSC_{IHM}$, $LSR_{IHM}$, $U$, $H$, $Degree_{IHM}$ e $Closeness_{IHM}$.
 - **`IhmOutlierFilter`** (`src/hardness/ihm_outlier_filter.py`): Filtra instâncias com alto escore de ruído para o tratamento experimental de Q2.
 
-### 4.7. Estatística e Validade Científica (`src/statistics/`)
+### 4.7. Estatística e Análise por Classes (`src/statistics/`)
 - **`SpearmanCorrelationAnalyzer`** (`src/statistics/spearman_correlation_analyzer.py`): Análise de correlação de postos de Spearman ($\rho$) e p-valores para Q1.
 - **`HypothesisTester`** (`src/statistics/hypothesis_tester.py`): Shapiro-Wilk, teste pareado (t-Student ou Wilcoxon) e tamanho de efeito ($A_{12}$ ou $d$) para Q2.
+- **`ClassHardnessAnalyzer`** (`src/statistics/class_hardness_analyzer.py`): Agrupa amostras por espécie botânica calculando a quantidade de amostras, IH médio, desvio padrão e médias das 13 IHMs, gerando também a análise de desempenho segmentada por quantidade de amostras.
 
 ### 4.8. Visualização Científica (`src/visualization/`)
 - **`ScientificVisualizationPlotter`** (`src/visualization/scientific_visualization_plotter.py`): Boxplots dinâmicos (`ihm_boxplots.png`) e heatmap de Spearman (`spearman_heatmap.png`).
 
 ### 4.9. Pipeline Orquestrador (`src/pipelines/`)
-- **`ExperimentPipeline`** (`src/pipelines/experiment_pipeline.py`): Orquestração do experimento ponta a ponta com exportação em CSV e PNG.
+- **`ExperimentPipeline`** (`src/pipelines/experiment_pipeline.py`): Orquestração ponta a ponta gerando todos os CSVs e gráficos no diretório de saída.
 
 ---
 
 ## 5. Estrutura dos Arquivos CSV Exportados
 
-O pipeline exporta 4 arquivos no formato CSV (delimitador `;`, codificação `utf-8`):
+O pipeline exporta 6 arquivos no formato CSV (delimitador `;`, codificação `utf-8`):
 
-1. **`instance_hardness_and_ihm.csv`**:
-   - Cada linha representa uma amostra do dataset.
-   - Colunas: `amostra_id`, `rotulo_classe`, `ground_truth_ih`, seguidas por uma coluna para cada métrica IHM (`ihm_kDN`, `ihm_DCP`, `ihm_TD`, `ihm_CLD`, `ihm_F1_IHM`, `ihm_N1_IHM`, `ihm_N2_IHM`, `ihm_LSC_IHM`, `ihm_LSR_IHM`, `ihm_U`, `ihm_H`, `ihm_Degree_IHM`, `ihm_Closeness_IHM`).
-
-2. **`q1_spearman_correlations.csv`**:
-   - Cada linha representa uma métrica IHM analisada em relação ao Ground Truth IH ($r_s$).
-   - Colunas: `metrica_ihm`, `spearman_rho`, `p_valor`, `significante_alpha_0_05` (`SIM` ou `NAO`).
-
-3. **`q2_classification_comparison.csv`**:
-   - Cada linha representa um classificador do pool de modelos avaliado antes e depois da filtragem.
-   - Colunas: `classificador`, `f1_score_baseline`, `f1_score_filtrado_ihm`, `diferenca_ganho_f1`.
-
-4. **`q2_statistical_hypothesis_summary.csv`**:
-   - Tabela síntese dos testes formais de significância estatística.
-   - Linhas: Teste de Normalidade (Shapiro-Wilk), Teste Pareado (t-Student ou Wilcoxon), Nível de Significância ($\alpha=0.05$) e Tamanho do Efeito (Vargha-Delaney $A_{12}$ ou $d$ de Cohen).
-   - Colunas: `metrica_avaliacao`, `valor`, `interpretacao`.
+1. **`instance_hardness_and_ihm.csv`**: Instâncias individuais com ground truth IH e as 13 métricas IHM.
+2. **`q1_spearman_correlations.csv`**: Correlação de Spearman ($\rho$), p-valor e significância de cada métrica com o IH.
+3. **`q2_classification_comparison.csv`**: Macro F1-score dos 7 modelos no baseline vs filtrado e ganho obtido.
+4. **`q2_statistical_hypothesis_summary.csv`**: Teste de normalidade, teste pareado e tamanho de efeito.
+5. **`class_hardness_summary.csv`**:
+   - Cada linha representa uma classe botânica (espécie).
+   - Colunas: `classe_id`, `nome_especie`, `quantidade_amostras`, `media_ground_truth_ih`, `desvio_ih`, `taxa_acerto_media`, seguidas pelas médias das 13 métricas IHM (`media_ihm_kDN`, `media_ihm_F1_IHM`, `media_ihm_TD`, etc.).
+6. **`sample_size_performance_analysis.csv`**:
+   - Cada linha representa uma faixa de tamanho de classe (ex.: 5 a 10 amostras, 11 a 25 amostras, etc.).
+   - Colunas: `faixa_quantidade_amostras`, `quantidade_classes`, `total_amostras`, `media_ih_erro`, `taxa_acerto_media`, `media_kdn`, `media_dcp`, `media_n2`, `impacto_dificuldade`.

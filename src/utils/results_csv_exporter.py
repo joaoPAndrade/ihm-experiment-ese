@@ -10,12 +10,15 @@ class ResultsCsvExporter:
     def _export_instances_and_correlations(self, data: dict[str, Any], output_dir: str) -> list[str]:
         p1 = os.path.join(output_dir, "instance_hardness_and_ihm.csv")
         ih, ihm, labels = data["ih"], data["ihm"], data["labels"]
+        class_names = data.get("class_names", {})
         metric_keys = list(ihm.keys())
         with open(p1, "w", encoding="utf-8", newline="") as stream:
             writer = csv.writer(stream, delimiter=self.delimiter)
-            writer.writerow(["amostra_id", "rotulo_classe", "ground_truth_ih"] + [f"ihm_{k}" for k in metric_keys])
+            writer.writerow(["amostra_id", "rotulo_classe", "nome_especie", "ground_truth_ih"] + [f"ihm_{k}" for k in metric_keys])
             for idx in range(len(ih)):
-                row = [idx, int(labels[idx]), f"{float(ih[idx]):.6f}"] + [f"{float(ihm[k][idx]):.6f}" for k in metric_keys]
+                cls_id = int(labels[idx])
+                sp_name = class_names.get(cls_id, f"Class_{cls_id}")
+                row = [idx, cls_id, sp_name, f"{float(ih[idx]):.6f}"] + [f"{float(ihm[k][idx]):.6f}" for k in metric_keys]
                 writer.writerow(row)
         p2 = os.path.join(output_dir, "q1_spearman_correlations.csv")
         corrs = data["correlations"]

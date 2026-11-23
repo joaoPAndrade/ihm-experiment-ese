@@ -31,7 +31,7 @@ class TestExperimentPipeline:
             assert "plot_paths" in results
             assert len(results["plot_paths"]) == 2
             assert "csv_paths" in results
-            assert len(results["csv_paths"]) == 4
+            assert len(results["csv_paths"]) == 6
             for p in results["csv_paths"]:
                 assert os.path.exists(p)
 

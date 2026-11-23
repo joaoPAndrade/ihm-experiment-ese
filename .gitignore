@@ -232,3 +232,6 @@ ENV/
 AGENTS.md
 .agents/
 datasets/
+# Experimento outputs
+outputs/
+outputs_*/

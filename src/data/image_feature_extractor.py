@@ -1,11 +1,12 @@
 import os
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFile
 
 
 class ImageFeatureExtractor:
     def __init__(self, target_size: tuple[int, int] = (64, 64), n_bins: int = 8, grid_size: int = 2) -> None:
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
         self.target_size: tuple[int, int] = target_size
         self.n_bins: int = n_bins
         self.grid_size: int = grid_size
