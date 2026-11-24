@@ -1,0 +1,5 @@
+metrica_avaliacao;valor;interpretacao
+Normalidade (Shapiro-Wilk);4.159081e-01;Normal
+Teste de Hipotese Pareado;t-Student Pareado;p-valor: 4.546087e-03
+Significante a alpha=0.05;SIM (Rejeita H0);Impacto Estatistico Confirmado
+Tamanho de Efeito (d de Cohen);1.490515;Magnitude do Efeito da Filtragem

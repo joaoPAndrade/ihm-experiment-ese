@@ -1,0 +1,8 @@
+classificador;f1_score_baseline;f1_score_filtrado_ihm;diferenca_ganho_f1
+SVM_Linear;0.560342;0.744339;0.183997
+SVM_RBF;0.493208;0.580866;0.087658
+Logistic_Regression;0.503175;0.710212;0.207037
+Random_Forest;0.565565;0.690159;0.124594
+Gradient_Boosting;0.526561;0.508273;-0.018288
+Bagging;0.400053;0.530178;0.130125
+MLP;0.580938;0.721534;0.140596

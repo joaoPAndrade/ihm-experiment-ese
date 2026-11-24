@@ -1,0 +1,5 @@
+metrica_avaliacao;valor;interpretacao
+Normalidade (Shapiro-Wilk);1.000000e+00;Nao-Normal
+Teste de Hipotese Pareado;Wilcoxon Pareado;p-valor: 1.000000e+00
+Significante a alpha=0.05;NAO (Nao Rejeita H0);Sem diferenca estatistica
+Tamanho de Efeito (Vargha-Delaney A12);0.500000;Magnitude do Efeito da Filtragem

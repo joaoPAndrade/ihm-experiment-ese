@@ -1,0 +1,3 @@
+faixa_quantidade_amostras;quantidade_classes;total_amostras;media_ih_erro;taxa_acerto_media;media_kdn;media_dcp;media_n2;impacto_dificuldade
+5 a 10 amostras (Raras);2;19;0.650333;0.349667;0.626667;0.325000;0.529775;Alta Dureza / Risco de Erro Elevado
+11 a 25 amostras (Baixo Suporte);3;36;0.536890;0.463110;0.577778;0.170635;0.463749;Dureza Moderada / Desempenho Estavel
